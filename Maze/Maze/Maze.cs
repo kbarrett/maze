@@ -130,9 +130,16 @@ namespace Maze
 
         public IEnumerable<MazePiece> getStartPoints()
         {
-            for (int current = goalRoute.Count - 1; current > goalRoute.Count - 13 && current >=0; --current)
+            if (goalRoute.Count == 0)
             {
-                yield return getMazeLoc(goalRoute[current]);
+                yield return getMazeLoc(goal);
+            }
+            else
+            {
+                for (int current = goalRoute.Count - 1; current > goalRoute.Count - 13 && current >= 0; --current)
+                {
+                    yield return getMazeLoc(goalRoute[current]);
+                }
             }
         }
 
