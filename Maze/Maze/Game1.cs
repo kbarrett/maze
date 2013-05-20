@@ -25,7 +25,7 @@ namespace Maze
         bool won;
         int goalcurrent = 0;
         IEnumerator<MazePiece> goalLocs;
-        IEnumerator<bool> GoalWaiter;
+        IEnumerator<float> GoalWaiter;
         MazePiece currentGoalPiece;
 
         public Game1()
@@ -156,7 +156,8 @@ namespace Maze
 
             if (goalLocs != null)
             {
-                goalLocs.Current.Draw(spriteBatch, Color.Yellow);
+                float alpha = GoalWaiter != null ? GoalWaiter.Current : 0.0f;
+                goalLocs.Current.Draw(spriteBatch, Color.Yellow * alpha);
             }
             else
             {
@@ -172,11 +173,11 @@ namespace Maze
             base.Draw(gameTime);
         }
 
-        protected IEnumerable<bool> WaitDelay(int length)
+        protected IEnumerable<float> WaitDelay(int length)
         {
             for (int i = 0; i < length; ++i)
             {
-                yield return false;
+                yield return (float) (length - i) / (float) length;
             }
         }
     }
