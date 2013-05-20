@@ -24,21 +24,31 @@ namespace Maze
         public Maze()
         {
             maze = new MazePiece[mazeSize, mazeSize];
-            Random random = new Random();
-            for (int i = 0; i < mazeSize; ++i)
-            {
-                for (int j = 0; j < mazeSize; ++j)
-                {
-                    maze[i,j] = new MazePiece(i * mazePieceSize, j * mazePieceSize, random.Next(0,3)%3 == 0);
-                }
-            }
-            playerLoc = Vector2.Zero;
-            maze[0, 0] = new MazePiece(0, 0, false);
-            maze[0, 0].givePlayer();
-            maze[0, 0].makeVisible();
-            findVisibles(0, 0);
+            reset();
+        }
 
-            placeGoal();
+        public void reset()
+        {
+            do
+            {
+                Random random = new Random();
+                for (int i = 0; i < mazeSize; ++i)
+                {
+                    for (int j = 0; j < mazeSize; ++j)
+                    {
+                        maze[i, j] = new MazePiece(i * mazePieceSize, j * mazePieceSize, random.Next(0, 3) % 3 == 0);
+                    }
+                }
+                playerLoc = Vector2.Zero;
+                maze[0, 0] = new MazePiece(0, 0, false);
+                maze[0, 0].givePlayer();
+                maze[0, 0].makeVisible();
+                findVisibles(0, 0);
+
+                placeGoal();
+            }
+            while (goalRoute.Count < 10);
+
         }
 
         public void Draw(SpriteBatch sb)
@@ -79,6 +89,19 @@ namespace Maze
 
             goal = goalRoute.FirstOrDefault<Vector2>();
             getMazeLoc(goal).makeGoal();
+
+            resetMaze();
+        }
+
+        private void resetMaze()
+        {
+            for (int i = 0; i < mazeSize; ++i)
+            {
+                for (int j = 0; j < mazeSize; ++j)
+                {
+                    maze[i, j].explored = false;
+                }
+            }
         }
 
         List<Vector2> recursion(Vector2 loc)

@@ -108,8 +108,8 @@ namespace Maze
                 }
 
                 if (ks.IsKeyDown(Keys.R)) 
-                { 
-                    maze = new Maze();
+                {
+                    maze.reset();
                     lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
                     goalLocs = null;
                     goalcurrent = 0;
