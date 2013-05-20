@@ -18,9 +18,14 @@ namespace Maze
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        SpriteFont font;
         public static Texture2D background;
         Maze maze;
         double lastTurn = -1;
+        bool won;
+        int goalcurrent = 0;
+        IEnumerable<MazePiece> goalLocs;
+        MazePiece currentGoalPiece;
 
         public Game1()
         {
@@ -53,6 +58,7 @@ namespace Maze
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            font = this.Content.Load<SpriteFont>("Font");
            background = this.Content.Load<Texture2D>("art//background");
         }
 
@@ -80,19 +86,35 @@ namespace Maze
             if (lastTurn == -1 || lastTurn + 300 < gameTime.TotalGameTime.TotalMilliseconds)
             {
                 KeyboardState ks = Keyboard.GetState();
-                bool succeed = false;
-                if (ks.IsKeyDown(Keys.Up) && maze.movePlayer(new Vector2(0, -1))) { succeed = true; }
-                else if (ks.IsKeyDown(Keys.Down) && maze.movePlayer(new Vector2(0, 1))) { succeed = true; }
-                else if (ks.IsKeyDown(Keys.Left) && maze.movePlayer(new Vector2(-1, 0))) { succeed = true; }
-                else if (ks.IsKeyDown(Keys.Right) && maze.movePlayer(new Vector2(1, 0))) { succeed = true; }
 
-                if (succeed)
+                if (!won)
                 {
-                    lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
+                    bool succeed = false;
+                    if (ks.IsKeyDown(Keys.Up) &&
+                        maze.movePlayer(new Vector2(0, -1)))
+                    {
+                        succeed = true;
+                    }
+                    else if (ks.IsKeyDown(Keys.Down) && maze.movePlayer(new Vector2(0, 1))) { succeed = true; }
+                    else if (ks.IsKeyDown(Keys.Left) && maze.movePlayer(new Vector2(-1, 0))) { succeed = true; }
+                    else if (ks.IsKeyDown(Keys.Right) && maze.movePlayer(new Vector2(1, 0))) { succeed = true; }
+
+                    if (succeed)
+                    {
+                        lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
+                    }
                 }
 
-                if (ks.IsKeyDown(Keys.R)) { maze = new Maze(); }
+                if (ks.IsKeyDown(Keys.R)) 
+                { 
+                    maze = new Maze();
+                    lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
+                    goalLocs = null;
+                    goalcurrent = 0;
+                }
             }
+
+            won = maze.checkGoal();
 
             base.Update(gameTime);
         }
@@ -105,7 +127,38 @@ namespace Maze
         {
             GraphicsDevice.Clear(Color.Black);
             spriteBatch.Begin();
-            maze.Draw(spriteBatch);
+
+
+            if (!maze.goalPlaced())
+            {
+                if (lastTurn == -1 || lastTurn + 80 < gameTime.TotalGameTime.TotalMilliseconds) 
+                {
+                    if (goalLocs == null)
+                    {
+                        goalLocs = maze.placeGoal();
+                    }
+                    foreach (MazePiece mp in goalLocs)
+                    {
+                        if (goalcurrent < 50)
+                        {
+                            currentGoalPiece = mp;
+                            goalcurrent++;
+                            break;
+                        }
+                    }
+                    lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
+                }
+                currentGoalPiece.Draw(spriteBatch, Color.Yellow);
+            }
+            else
+            {
+                maze.Draw(spriteBatch);
+                if (won)
+                {
+                    int pos = Maze.mazeSize * Maze.mazePieceSize * 2 / 6;
+                    spriteBatch.DrawString(font, "WON", new Vector2(pos, pos), Color.Yellow);
+                }
+            }
             spriteBatch.End();
             base.Draw(gameTime);
         }
