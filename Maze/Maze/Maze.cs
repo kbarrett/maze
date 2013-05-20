@@ -130,10 +130,17 @@ namespace Maze
 
         public IEnumerable<MazePiece> getStartPoints()
         {
-            yield return getMazeLoc(new Vector2(0, 0));
-            yield return getMazeLoc(new Vector2(0, 1));
-            yield return getMazeLoc(new Vector2(1, 0));
-            yield return getMazeLoc(new Vector2(1, 1));
+            if (goalRoute.Count == 0)
+            {
+                yield return getMazeLoc(goal);
+            }
+            else
+            {
+                for (int current = goalRoute.Count - 1; current > goalRoute.Count - 13 && current >= 0; --current)
+                {
+                    yield return getMazeLoc(goalRoute[current]);
+                }
+            }
         }
 
         private void findVisibles(int x, int y)
@@ -208,16 +215,15 @@ namespace Maze
             else if(wall) colour = Color.Red;
             else if (goal) colour = Color.Yellow;
             else colour = Color.White;
-
-            Draw(sb, colour);
+            if (visible)
+            {
+                Draw(sb, colour);
+            }
             
         }
         public void Draw(SpriteBatch sb, Color colour)
         {
-            if (visible)
-            {
-                sb.Draw(Game1.background, loc, colour);
-            }
+           sb.Draw(Game1.background, loc, colour);
         }
 
         public void makeVisible()
