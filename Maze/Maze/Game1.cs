@@ -137,7 +137,7 @@ namespace Maze
                     if (goalLocs.MoveNext())
                     {
                         // Wait another 30 frames before advancing again
-                        GoalWaiter = WaitDelay(30).GetEnumerator();
+                        GoalWaiter = WaitDelay(10).GetEnumerator();
                     }
                     else
                     {

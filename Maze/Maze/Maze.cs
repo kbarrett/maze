@@ -159,7 +159,7 @@ namespace Maze
             }
             else
             {
-                for (int current = goalRoute.Count - 1; current > goalRoute.Count - 13 && current >= 0; --current)
+                for (int current = goalRoute.Count - 1; current >= 0; --current)
                 {
                     yield return getMazeLoc(goalRoute[current]);
                 }
