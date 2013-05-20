@@ -19,6 +19,8 @@ namespace Maze
         public static int mazePieceSize = 20;
         public static int mazeSize = 30;
         MazePiece[,] maze;
+        List<Vector2> goalRoute;
+
         public Maze()
         {
             maze = new MazePiece[mazeSize, mazeSize];
@@ -35,6 +37,8 @@ namespace Maze
             maze[0, 0].givePlayer();
             maze[0, 0].makeVisible();
             findVisibles(0, 0);
+
+            placeGoal();
         }
 
         public void Draw(SpriteBatch sb)
@@ -68,49 +72,59 @@ namespace Maze
             return true;
         }
 
-        public IEnumerable<MazePiece> placeGoal()
+        public void placeGoal()
         {
             Vector2 current = new Vector2(playerLoc.X, playerLoc.Y);
-            Random random = new Random();
-            do
+            goalRoute = recursion(current);
+            goal = goalRoute.First<Vector2>();
+            getMazeLoc(goal).makeGoal();
+        }
+
+        List<Vector2> recursion(Vector2 loc)
+        {
+            List<Vector2> children = getChildren(loc);
+            if (children.Count == 0)
             {
-                Vector2 next;
-                switch (random.Next(0, 4))
+                return new List<Vector2>();
+            }
+            else
+            {
+                List<Vector2> longestList = null;
+                foreach (Vector2 vec in children)
                 {
-                    case 0:
-                        {
-                            next = getAbove(current);
-                            break;
-                        }
-                    case 1 :
-                        {
-                            next = getBelow(current);
-                            break;
-                        }
-                    case 2:
-                        {
-                            next = getLeft(current);
-                            break;
-                        }
-                    default :
-                        {
-                            next = getRight(current);
-                            break;
-                        }
-                }
-                if (isValidLoc(next))
-                {
-                    if (!getMazeLoc(next).wall)
+                    getMazeLoc(vec).explored = true;
+                    List<Vector2> returnList = recursion(vec);
+                    returnList.Add(vec);
+                    if (longestList == null || returnList.Count > longestList.Count)
                     {
-                        current = next;
+                        longestList = returnList;
                     }
                 }
-                yield return getMazeLoc(current);
+
+                return longestList;
             }
-            while(random.Next(0, mazeSize * mazeSize * 4) != 0);
-            goal = current;
-            getMazeLoc(current).makeGoal();
-            yield break;
+        }
+
+        List<Vector2> getChildren(Vector2 piece)
+        {
+            List<Vector2> children = new List<Vector2>(4);
+            if (isValidLoc(getAbove(piece)) && !getMazeLoc(getAbove(piece)).explored && !getMazeLoc(getAbove(piece)).wall)
+            {
+                children.Add(getAbove(piece));
+            }
+            if (isValidLoc(getBelow(piece)) && !getMazeLoc(getBelow(piece)).explored && !getMazeLoc(getBelow(piece)).wall)
+            {
+                children.Add(getBelow(piece));
+            }
+            if (isValidLoc(getLeft(piece)) && !getMazeLoc(getLeft(piece)).explored && !getMazeLoc(getLeft(piece)).wall)
+            {
+                children.Add(getLeft(piece));
+            }
+            if (isValidLoc(getRight(piece)) && !getMazeLoc(getRight(piece)).explored && !getMazeLoc(getRight(piece)).wall)
+            {
+                children.Add(getRight(piece));
+            }
+            return children;
         }
 
         private void findVisibles(int x, int y)
@@ -163,6 +177,7 @@ namespace Maze
 
     class MazePiece
     {
+        public bool explored {get; set;}
         public bool wall { get; private set; }
         bool visible;
         Vector2 loc;
@@ -174,6 +189,7 @@ namespace Maze
             loc = new Vector2(x,y);
             this.wall = wall;
             visible = false;
+            explored = false;
         }
 
         public void Draw(SpriteBatch sb)
