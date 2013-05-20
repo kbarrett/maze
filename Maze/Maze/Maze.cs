@@ -76,7 +76,8 @@ namespace Maze
         {
             Vector2 current = new Vector2(playerLoc.X, playerLoc.Y);
             goalRoute = recursion(current);
-            goal = goalRoute.First<Vector2>();
+
+            goal = goalRoute.FirstOrDefault<Vector2>();
             getMazeLoc(goal).makeGoal();
         }
 
