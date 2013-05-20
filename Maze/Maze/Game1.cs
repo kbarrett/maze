@@ -130,24 +130,31 @@ namespace Maze
             GraphicsDevice.Clear(Color.Black);
             spriteBatch.Begin();
 
-            if (GoalWaiter == null)
+            if(goalLocs != null)
             {
-                if (goalLocs.MoveNext())
+                if (GoalWaiter == null)
                 {
-                    // Wait another 30 frames before advancing again
-                    GoalWaiter = WaitDelay(30).GetEnumerator();
+                    if (goalLocs.MoveNext())
+                    {
+                        // Wait another 30 frames before advancing again
+                        GoalWaiter = WaitDelay(30).GetEnumerator();
+                    }
+                    else
+                    {
+                        goalLocs = null;
+                    }
                 }
-            }
-            else
-            {
-                if (!GoalWaiter.MoveNext())
+                else
                 {
-                    GoalWaiter = null;
+                    if (!GoalWaiter.MoveNext())
+                    {
+                        GoalWaiter = null;
+                    }
                 }
+
             }
 
-
-            if (goalLocs.Current != null)
+            if (goalLocs != null)
             {
                 goalLocs.Current.Draw(spriteBatch, Color.Yellow);
             }
