@@ -23,10 +23,8 @@ namespace Maze
         Maze maze;
         double lastTurn = -1;
         bool won;
-        int goalcurrent = 0;
         IEnumerator<MazePiece> goalLocs;
         IEnumerator<float> GoalWaiter;
-        MazePiece currentGoalPiece;
 
         public Game1()
         {
@@ -111,8 +109,8 @@ namespace Maze
                 {
                     maze.reset();
                     lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
-                    goalLocs = null;
-                    goalcurrent = 0;
+                    goalLocs = maze.getStartPoints().GetEnumerator();
+                    GoalWaiter = null;
                 }
             }
 
