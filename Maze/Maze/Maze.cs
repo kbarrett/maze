@@ -127,6 +127,14 @@ namespace Maze
             return children;
         }
 
+        public IEnumerable<MazePiece> getStartPoints()
+        {
+            yield return getMazeLoc(new Vector2(0, 0));
+            yield return getMazeLoc(new Vector2(0, 1));
+            yield return getMazeLoc(new Vector2(1, 0));
+            yield return getMazeLoc(new Vector2(1, 1));
+        }
+
         private void findVisibles(int x, int y)
         {
             for (int i = x; i < mazeSize; ++i)

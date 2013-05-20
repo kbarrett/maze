@@ -24,7 +24,8 @@ namespace Maze
         double lastTurn = -1;
         bool won;
         int goalcurrent = 0;
-        IEnumerable<MazePiece> goalLocs;
+        IEnumerator<MazePiece> goalLocs;
+        IEnumerator<bool> GoalWaiter;
         MazePiece currentGoalPiece;
 
         public Game1()
@@ -47,6 +48,8 @@ namespace Maze
             base.Initialize();
             maze = new Maze();
 
+            goalLocs = maze.getStartPoints().GetEnumerator();
+            GoalWaiter = null;
         }
 
         /// <summary>
@@ -82,7 +85,6 @@ namespace Maze
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
-            // FIXME: please
             if (lastTurn == -1 || lastTurn + 300 < gameTime.TotalGameTime.TotalMilliseconds)
             {
                 KeyboardState ks = Keyboard.GetState();
@@ -128,27 +130,26 @@ namespace Maze
             GraphicsDevice.Clear(Color.Black);
             spriteBatch.Begin();
 
-
-            if (!maze.goalPlaced())
+            if (GoalWaiter == null)
             {
-                if (lastTurn == -1 || lastTurn + 80 < gameTime.TotalGameTime.TotalMilliseconds) 
+                if (goalLocs.MoveNext())
                 {
-                    if (goalLocs == null)
-                    {
-                        goalLocs = maze.placeGoal();
-                    }
-                    foreach (MazePiece mp in goalLocs)
-                    {
-                        if (goalcurrent < 50)
-                        {
-                            currentGoalPiece = mp;
-                            goalcurrent++;
-                            break;
-                        }
-                    }
-                    lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
+                    // Wait another 30 frames before advancing again
+                    GoalWaiter = WaitDelay(30).GetEnumerator();
                 }
-                currentGoalPiece.Draw(spriteBatch, Color.Yellow);
+            }
+            else
+            {
+                if (!GoalWaiter.MoveNext())
+                {
+                    GoalWaiter = null;
+                }
+            }
+
+
+            if (goalLocs.Current != null)
+            {
+                goalLocs.Current.Draw(spriteBatch, Color.Yellow);
             }
             else
             {
@@ -159,8 +160,17 @@ namespace Maze
                     spriteBatch.DrawString(font, "WON", new Vector2(pos, pos), Color.Yellow);
                 }
             }
+
             spriteBatch.End();
             base.Draw(gameTime);
+        }
+
+        protected IEnumerable<bool> WaitDelay(int length)
+        {
+            for (int i = 0; i < length; ++i)
+            {
+                yield return false;
+            }
         }
     }
 }
