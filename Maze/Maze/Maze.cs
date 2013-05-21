@@ -151,7 +151,7 @@ namespace Maze
             return children;
         }
 
-        public IEnumerable<MazePiece> getStartPoints()
+        public IEnumerable<MazePiece> getStartPoints(int steps = 0)
         {
             if (goalRoute.Count == 0)
             {
@@ -159,7 +159,7 @@ namespace Maze
             }
             else
             {
-                for (int current = goalRoute.Count - 1; current >= 0; --current)
+                for (int current = goalRoute.Count - 1; current >= 0 && (current > goalRoute.Count - 1 - steps); --current)
                 {
                     yield return getMazeLoc(goalRoute[current]);
                 }

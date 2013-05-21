@@ -19,12 +19,23 @@ namespace Maze
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
         SpriteFont font;
+        SpriteFont font_small;
         public static Texture2D background;
         Maze maze;
         double lastTurn = -1;
         bool won;
         IEnumerator<MazePiece> goalLocs;
         IEnumerator<float> GoalWaiter;
+
+        int difficulty = 1;
+
+        TimeSpan timeTaken;
+        TimeSpan lastTimeTaken;
+        TimeSpan pausedTime;
+        bool stopped;
+        bool showTime = true;
+
+        KeyboardState lastKS;
 
         public Game1()
         {
@@ -45,8 +56,13 @@ namespace Maze
             // TODO: Add your initialization logic here
             base.Initialize();
             maze = new Maze();
+            reset();
+        }
 
-            goalLocs = maze.getStartPoints().GetEnumerator();
+        private void reset()
+        {
+            stopped = true;
+            goalLocs = maze.getStartPoints(difficulty).GetEnumerator();
             GoalWaiter = null;
         }
 
@@ -60,6 +76,7 @@ namespace Maze
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             font = this.Content.Load<SpriteFont>("Font");
+            font_small = this.Content.Load<SpriteFont>("Font_small");
            background = this.Content.Load<Texture2D>("art//background");
         }
 
@@ -83,40 +100,82 @@ namespace Maze
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
+            if (lastTimeTaken == null)
+            {
+                lastTimeTaken = gameTime.TotalGameTime;
+            }
+            if (!stopped)
+            {
+                lastTimeTaken += pausedTime;
+                timeTaken = gameTime.TotalGameTime + pausedTime;
+                pausedTime = TimeSpan.Zero;
+            }
+            else if(!won)
+            {
+                pausedTime += gameTime.ElapsedGameTime;
+            }
+
             if (lastTurn == -1 || lastTurn + 300 < gameTime.TotalGameTime.TotalMilliseconds)
             {
-                KeyboardState ks = Keyboard.GetState();
-
-                if (!won)
+                if (acceptKeyboardInput(gameTime))
                 {
-                    bool succeed = false;
-                    if (ks.IsKeyDown(Keys.Up) &&
-                        maze.movePlayer(new Vector2(0, -1)))
-                    {
-                        succeed = true;
-                    }
-                    else if (ks.IsKeyDown(Keys.Down) && maze.movePlayer(new Vector2(0, 1))) { succeed = true; }
-                    else if (ks.IsKeyDown(Keys.Left) && maze.movePlayer(new Vector2(-1, 0))) { succeed = true; }
-                    else if (ks.IsKeyDown(Keys.Right) && maze.movePlayer(new Vector2(1, 0))) { succeed = true; }
-
-                    if (succeed)
-                    {
-                        lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
-                    }
-                }
-
-                if (ks.IsKeyDown(Keys.R)) 
-                {
-                    maze.reset();
                     lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
-                    goalLocs = maze.getStartPoints().GetEnumerator();
-                    GoalWaiter = null;
                 }
             }
 
             won = maze.checkGoal();
 
+            if (won) { stopped = true; }
+
             base.Update(gameTime);
+        }
+
+        private bool acceptKeyboardInput(GameTime gameTime)
+        {
+            KeyboardState ks = Keyboard.GetState();
+
+            if (!stopped)
+            {
+                if (ks.IsKeyDown(Keys.Up) &&
+                    maze.movePlayer(new Vector2(0, -1)))
+                {
+                    return true;
+                }
+                else if (ks.IsKeyDown(Keys.Down) && maze.movePlayer(new Vector2(0, 1))) { return true; }
+                else if (ks.IsKeyDown(Keys.Left) && maze.movePlayer(new Vector2(-1, 0))) { return true; }
+                else if (ks.IsKeyDown(Keys.Right) && maze.movePlayer(new Vector2(1, 0))) { return true; }
+            }
+
+            if (pressed(ks, Keys.R))
+            {
+                maze.reset();
+                lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
+
+                lastTimeTaken = timeTaken;
+                timeTaken = gameTime.TotalGameTime;
+
+                reset();
+                return true;
+            }
+            if (pressed(ks, Keys.P))
+            {
+                stopped = !stopped;
+                return true;
+            }
+            if (pressed(ks, Keys.T))
+            {
+                showTime = !showTime;
+                return true;
+            }
+
+            lastKS = ks;
+
+            return false;
+        }
+
+        private bool pressed(KeyboardState ks, Keys key)
+        {
+            return ks.IsKeyDown(key) && (lastKS == null || lastKS.IsKeyUp(key));
         }
 
         /// <summary>
@@ -147,6 +206,7 @@ namespace Maze
                     if (!GoalWaiter.MoveNext())
                     {
                         GoalWaiter = null;
+                        stopped = false;
                     }
                 }
 
@@ -160,6 +220,16 @@ namespace Maze
             else
             {
                 maze.Draw(spriteBatch);
+
+                if (showTime)
+                {
+                    spriteBatch.DrawString(
+                        font_small,
+                        "Time: " + (timeTaken - lastTimeTaken),
+                        new Vector2((Maze.mazeSize - 5) * Maze.mazePieceSize, (Maze.mazeSize - 1) * Maze.mazePieceSize),
+                        Color.Yellow);
+                }
+
                 if (won)
                 {
                     int pos = Maze.mazeSize * Maze.mazePieceSize * 2 / 6;
