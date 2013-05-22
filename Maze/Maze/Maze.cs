@@ -15,7 +15,8 @@ namespace Maze
     class Maze
     {
         Vector2 playerLoc;
-        Vector2 goal = new Vector2(-1,-1);
+        Vector2 player2Loc;
+        List<Vector2> goal;
         public static int mazePieceSize = 20;
         public static int mazeSize = 30;
         MazePiece[,] maze;
@@ -24,10 +25,10 @@ namespace Maze
         public Maze()
         {
             maze = new MazePiece[mazeSize, mazeSize];
-            reset();
+            reset(1);
         }
 
-        public void reset()
+        public void reset(byte players)
         {
             do
             {
@@ -39,16 +40,43 @@ namespace Maze
                         maze[i, j] = new MazePiece(i * mazePieceSize, j * mazePieceSize, random.Next(0, 3) % 3 == 0);
                     }
                 }
-                playerLoc = Vector2.Zero;
-                maze[0, 0] = new MazePiece(0, 0, false);
-                maze[0, 0].givePlayer();
-                maze[0, 0].makeVisible();
-                findVisibles(0, 0);
+                
+                goal = new List<Vector2>();
 
-                placeGoal();
+                playerLoc = Vector2.Zero;
+                initialisePlayerSquare(1, playerLoc);
+                placeGoal(1);
+                if (players > 1)
+                {
+                    player2Loc = new Vector2(mazeSize - 1, mazeSize - 1);
+                    initialisePlayerSquare(2, player2Loc);
+                    placeGoal(2);
+                }
+                else
+                {
+                    if (player2Loc != new Vector2(-1, -1))
+                    {
+                        player2Loc = new Vector2(-1,-1);
+                        foreach (MazePiece mp in maze)
+                        {
+                            mp.removePlayer(2);
+                        }
+                    }
+                }
             }
             while (goalRoute.Count < 10);
 
+        }
+
+        void initialisePlayerSquare(byte playerNumber, Vector2 playerLoc)
+        {
+            MazePiece piece = getMazeLoc(playerLoc);
+            piece = new MazePiece(mazePieceSize * (int)playerLoc.X, mazePieceSize * (int)playerLoc.Y, false);
+            piece.givePlayer(playerNumber);
+            piece.makeVisible();
+            findVisibles((int)playerLoc.X, (int)playerLoc.Y);
+            
+            maze[(int)playerLoc.X, (int)playerLoc.Y] = piece;
         }
 
         public void Draw(SpriteBatch sb)
@@ -62,33 +90,46 @@ namespace Maze
             }
         }
 
-        public bool movePlayer(Vector2 direction)
+        public bool movePlayer(byte playerNo, Vector2 direction)
         {
-            Vector2 newLoc = playerLoc + direction;
+            Vector2 thisLoc = playerNo == 1 ? playerLoc : player2Loc;
+            Vector2 newLoc = thisLoc + direction;
             if (!isValidLoc(newLoc))
             { 
                 return false; 
             }
-            if (maze[(int)(playerLoc.X + direction.X), (int)(playerLoc.Y + direction.Y)].wall)
+            if (maze[(int)(thisLoc.X + direction.X), (int)(thisLoc.Y + direction.Y)].wall)
             {
                 return false;
             }
 
-            maze[(int)playerLoc.X, (int)playerLoc.Y].removePlayer();
-            playerLoc += direction;
-            maze[(int)playerLoc.X, (int)playerLoc.Y].givePlayer();
-            findVisibles((int)playerLoc.X, (int)playerLoc.Y);
+            getMazeLoc(thisLoc).removePlayer(playerNo);
+            thisLoc += direction;
+            getMazeLoc(thisLoc).givePlayer(playerNo);
+            findVisibles((int)thisLoc.X, (int)thisLoc.Y);
+
+            if (playerNo == 1)
+            {
+                playerLoc = thisLoc;
+            }
+            else if (playerNo == 2)
+            {
+                player2Loc = thisLoc;
+            }
 
             return true;
         }
 
-        public void placeGoal()
+        public void placeGoal(byte playerNo)
         {
-            Vector2 current = new Vector2(playerLoc.X, playerLoc.Y);
+            Vector2 current = playerNo == 1 ? new Vector2(playerLoc.X, playerLoc.Y) : new Vector2(player2Loc.X, player2Loc.Y);
             goalRoute = recursion(current);
 
-            goal = goalRoute.FirstOrDefault<Vector2>();
-            getMazeLoc(goal).makeGoal();
+            Vector2 goalLoc = goalRoute.FirstOrDefault<Vector2>();
+
+            goal.Add(goalLoc);
+
+            getMazeLoc(goalLoc).makeGoal();
 
             resetMaze();
         }
@@ -155,7 +196,7 @@ namespace Maze
         {
             if (goalRoute.Count == 0)
             {
-                yield return getMazeLoc(goal);
+                yield return getMazeLoc(goal[0]);
             }
             else
             {
@@ -192,7 +233,14 @@ namespace Maze
 
         public bool checkGoal()
         {
-            return goal == playerLoc;
+            foreach (Vector2 vec in goal)
+            {
+                if (vec == playerLoc || vec == player2Loc)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static Vector2 getAbove(Vector2 first) { return first + new Vector2(0, -1); }
@@ -210,7 +258,7 @@ namespace Maze
         }
         public bool goalPlaced()
         {
-            return goal != new Vector2(-1, -1);
+            return goal.Count == 0;
         }
     }
 
@@ -218,10 +266,11 @@ namespace Maze
     {
         public bool explored {get; set;}
         public bool wall { get; private set; }
-        bool visible;
+        bool visible = false;
         Vector2 loc;
-        bool player;
-        bool goal;
+        bool player = false;
+        bool player2 = false;
+        bool goal = false;
 
         public MazePiece(int x, int y, bool wall)
         {
@@ -234,10 +283,26 @@ namespace Maze
         public void Draw(SpriteBatch sb)
         {
             Color colour;
-            if(player) colour = Color.Blue;
-            else if(wall) colour = Color.Red;
-            else if (goal) colour = Color.Yellow;
-            else colour = Color.White;
+            if (player)
+            {
+                colour = Color.Blue;
+            }
+            else if (player2)
+            {
+                colour = Color.Green;
+            }
+            else if (wall)
+            {
+                colour = Color.Red;
+            }
+            else if (goal)
+            {
+                colour = Color.Yellow;
+            }
+            else
+            {
+                colour = Color.White;
+            }
             if (visible)
             {
                 Draw(sb, colour);
@@ -254,13 +319,21 @@ namespace Maze
             visible = true;
         }
 
-        public void givePlayer()
+        public void givePlayer(byte playerNo)
         {
-            player = true;
+            switch (playerNo)
+            {
+                case 1: player = true; break;
+                case 2: player2 = true; break;
+            }
         }
-        public void removePlayer()
+        public void removePlayer(byte playerNo)
         {
-            player = false;
+            switch (playerNo)
+            {
+                case 1: player = false; break;
+                case 2: player2 = false; break;
+            }
         }
         public void makeGoal()
         {

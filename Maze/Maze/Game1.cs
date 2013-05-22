@@ -27,6 +27,8 @@ namespace Maze
         IEnumerator<MazePiece> goalLocs;
         IEnumerator<float> GoalWaiter;
 
+        byte numberOfPlayers = 1;
+
         int difficulty = 1;
 
         TimeSpan timeTaken;
@@ -40,8 +42,8 @@ namespace Maze
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
-            graphics.PreferredBackBufferHeight = 30 * 20;
-            graphics.PreferredBackBufferWidth = 30 * 20;
+            graphics.PreferredBackBufferHeight = Maze.mazeSize * Maze.mazePieceSize;
+            graphics.PreferredBackBufferWidth = Maze.mazeSize * Maze.mazePieceSize;
             Content.RootDirectory = "Content";
         }
 
@@ -136,25 +138,17 @@ namespace Maze
 
             if (!stopped)
             {
-                if (ks.IsKeyDown(Keys.Up) &&
-                    maze.movePlayer(new Vector2(0, -1)))
+
+                if (acceptPlayer1Input(ks) | acceptPlayer2Input(ks))
                 {
                     return true;
                 }
-                else if (ks.IsKeyDown(Keys.Down) && maze.movePlayer(new Vector2(0, 1))) { return true; }
-                else if (ks.IsKeyDown(Keys.Left) && maze.movePlayer(new Vector2(-1, 0))) { return true; }
-                else if (ks.IsKeyDown(Keys.Right) && maze.movePlayer(new Vector2(1, 0))) { return true; }
+                
             }
 
             if (pressed(ks, Keys.R))
             {
-                maze.reset();
-                lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
-
-                lastTimeTaken = timeTaken;
-                timeTaken = gameTime.TotalGameTime;
-
-                reset();
+                RPressed(gameTime);
                 return true;
             }
             if (pressed(ks, Keys.P))
@@ -167,10 +161,55 @@ namespace Maze
                 showTime = !showTime;
                 return true;
             }
-
+            if(pressed(ks, Keys.F1))
+            {
+                numberOfPlayers = 1;
+                RPressed(gameTime);
+            }
+            if(pressed(ks, Keys.F2))
+            {
+                numberOfPlayers = 2;
+                RPressed(gameTime);
+            }
             lastKS = ks;
 
             return false;
+        }
+
+        private bool acceptPlayer1Input(KeyboardState ks)
+        {
+            if (ks.IsKeyDown(Keys.Up) &&
+                    maze.movePlayer(1, new Vector2(0, -1)))
+            {
+                return true;
+            }
+            else if (ks.IsKeyDown(Keys.Down) && maze.movePlayer(1, new Vector2(0, 1))) { return true; }
+            else if (ks.IsKeyDown(Keys.Left) && maze.movePlayer(1, new Vector2(-1, 0))) { return true; }
+            else if (ks.IsKeyDown(Keys.Right) && maze.movePlayer(1, new Vector2(1, 0))) { return true; }
+
+            return false;
+        }
+        private bool acceptPlayer2Input(KeyboardState ks)
+        {
+            if (ks.IsKeyDown(Keys.W) && maze.movePlayer(2, new Vector2(0, -1)))
+            {
+                return true;
+            }
+            else if (ks.IsKeyDown(Keys.S) && maze.movePlayer(2, new Vector2(0, 1))) { return true; }
+            else if (ks.IsKeyDown(Keys.A) && maze.movePlayer(2, new Vector2(-1, 0))) { return true; }
+            else if (ks.IsKeyDown(Keys.D) && maze.movePlayer(2, new Vector2(1, 0))) { return true; }
+            return false;
+        }
+
+        private void RPressed(GameTime gameTime)
+        {
+            maze.reset(numberOfPlayers);
+            lastTurn = gameTime.TotalGameTime.TotalMilliseconds;
+
+            lastTimeTaken = timeTaken;
+            timeTaken = gameTime.TotalGameTime;
+
+            reset();
         }
 
         private bool pressed(KeyboardState ks, Keys key)
